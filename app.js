@@ -148,8 +148,9 @@ function startGenuinePresenceTracker() {
     channel.onmessage = (e) => {
       if (e.data && e.data.type === 'PRESENCE_PING') {
         const sessions = getSessions();
-        const totalOnline = Object.keys(sessions).length;
-        const activeListening = Object.values(sessions).filter(s => s.isPlaying).length;
+        const sessionList = Object.values(sessions);
+        const totalOnline = Math.max(e.data.totalOnline || 1, sessionList.length || 1);
+        const activeListening = sessionList.filter(s => s.isPlaying).length;
         updateOnlineDisplay(activeListening, totalOnline);
       }
     };
