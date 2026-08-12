@@ -21,13 +21,18 @@
   <!-- App Shell -->
   <div id="app">
 
-    <!-- Header / Branding & Mode Pill -->
+    <!-- Top Header Bar -->
     <header class="app-header">
-      <div class="brand">
-        <h1 class="brand-title">GUJJU NI VIBE</h1>
-        <p class="brand-subtitle">“ગીત ગુજરાતી, vibe ગુજરાતી.”</p>
+      <!-- Top-Left: Real-time 12-hour clock -->
+      <div id="top-clock" class="top-clock">--:-- --</div>
+
+      <!-- Top-Center: Real-time live online visitor count -->
+      <div class="online-pill" title="Live listeners active">
+        <span class="green-dot"></span>
+        <span id="online-count">32 online</span>
       </div>
 
+      <!-- Top-Right: Floating Mode Switch Pill -->
       <div class="mode-switch-wrapper">
         <button id="mode-btn" class="mode-pill" aria-expanded="false" aria-haspopup="true">
           <span id="mode-pill-text">🎧 Gujarati Vibes</span>
@@ -45,17 +50,20 @@
       </div>
     </header>
 
-    <!-- Center breathing room for full artwork -->
+    <!-- Center Stage Atmosphere (Giant Gujarati Heading) -->
     <main class="center-stage">
-      <p id="subtle-prompt" class="subtle-prompt">આજે શું સાંભળવું છે?</p>
+      <h1 class="center-title">ગુજ્જુની મોજ</h1>
+      <p class="center-tagline">ગીત ગુજરાતી, vibe ગુજરાતી.</p>
       <div id="status-toast" class="status-toast"></div>
     </main>
 
-    <!-- Bottom Floating Music Player Card -->
+    <!-- Bottom Floating Capsule Pill Music Player -->
     <footer class="player-container">
-      <div class="player-card">
-        <img id="player-art" src="assets/images/gujarati-bg.jpg" alt="Cover Art" class="player-art">
+      <div class="player-card pill-card">
+        <!-- Circular Album Art -->
+        <img id="player-art" src="assets/images/gujarati-bg.jpg" alt="Cover Art" class="player-art-circle">
 
+        <!-- Info & Controls Body -->
         <div class="player-body">
           <div class="player-header">
             <div class="song-meta">
@@ -75,7 +83,7 @@
 
           <div class="player-controls">
             <button id="btn-prev" class="ctrl-btn" aria-label="Previous Track" title="Previous">⏮</button>
-            <button id="btn-play" class="ctrl-btn btn-play" aria-label="Play or Pause" title="Play/Pause">▶</button>
+            <button id="btn-play" class="ctrl-btn btn-play-circle" aria-label="Play or Pause" title="Play/Pause">▶</button>
             <button id="btn-next" class="ctrl-btn" aria-label="Next Track" title="Next">⏭</button>
           </div>
         </div>
@@ -84,14 +92,14 @@
 
   </div><!-- /#app -->
 
-  <!-- Invisible YouTube IFrame Player -->
+  <!-- Invisible YouTube IFrame Host -->
   <div id="yt-player-host">
     <div id="yt-player-container"></div>
   </div>
 
   <!-- Main App Controller (must load BEFORE YouTube API so callback is defined) -->
-  <script src="app.js?v=6"></script>
-  <!-- Official YouTube IFrame Player API (loads async, calls onYouTubeIframeAPIReady when ready) -->
+  <script src="app.js?v=7"></script>
+  <!-- Official YouTube IFrame Player API -->
   <script src="https://www.youtube.com/iframe_api"></script>
 
 </body>

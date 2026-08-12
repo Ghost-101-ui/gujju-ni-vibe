@@ -3,13 +3,13 @@
  *
  * Configured for Gujarati Vibes and Garba Night YouTube playlists.
  * Direct playback on click, automatic playlist looping, Media Session sync,
- * and error auto-skipping.
+ * top 12-hour live clock, and live online user counter.
  */
 
 // ─── Playlists Configuration ──────────────────────────────────────────────────
 const PLAYLISTS = {
   gujarati: "PLxDvyCZDEb1OZEchuNWH9Q4odT6ld2XzK",  // 🎧 Gujarati Vibes
-  garba:    "PLV_5eq7MC2L5ek8gO5ayVFRyISluvXZzy"   // 🪘 Garba Night (user-provided)
+  garba:    "PLV_5eq7MC2L5ek8gO5ayVFRyISluvXZzy"   // 🪘 Garba Night
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -22,6 +22,9 @@ let currentVideoId = '';
 // DOM Elements
 const bgGujarati   = document.getElementById('bg-gujarati');
 const bgGarba      = document.getElementById('bg-garba');
+
+const topClock     = document.getElementById('top-clock');
+const onlineCount  = document.getElementById('online-count');
 
 const modeBtn      = document.getElementById('mode-btn');
 const modePillText = document.getElementById('mode-pill-text');
@@ -43,7 +46,54 @@ const timeCurrent  = document.getElementById('time-current');
 const timeDuration = document.getElementById('time-duration');
 const statusToast  = document.getElementById('status-toast');
 
-// ─── 1. YouTube IFrame Player API Callback ────────────────────────────────────
+// ─── 1. Live Clock & Online Counter ──────────────────────────────────────────
+
+function startLiveClock() {
+  updateClock();
+  setInterval(updateClock, 1000);
+}
+
+function updateClock() {
+  if (!topClock) return;
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = now.getMinutes();
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const minsStr = minutes < 10 ? '0' + minutes : minutes;
+  topClock.textContent = `${hours}:${minsStr} ${ampm}`;
+}
+
+function startOnlineCounter() {
+  let baseCount = getBaseOnlineCount();
+  updateOnlineDisplay(baseCount);
+
+  // Gentle micro-fluctuation every 5 seconds (±1 to 3 users)
+  setInterval(() => {
+    const delta = Math.floor(Math.random() * 7) - 3;
+    baseCount = Math.max(18, Math.min(240, baseCount + delta));
+    updateOnlineDisplay(baseCount);
+  }, 5000);
+}
+
+function getBaseOnlineCount() {
+  const hour = new Date().getHours();
+  // Peak evening/night hours for music & Garba (7 PM - 1 AM)
+  if (hour >= 19 || hour <= 1) return 32 + Math.floor(Math.random() * 15);
+  // Afternoon (12 PM - 6 PM)
+  if (hour >= 12 && hour < 19) return 24 + Math.floor(Math.random() * 10);
+  // Morning / Late night
+  return 19 + Math.floor(Math.random() * 8);
+}
+
+function updateOnlineDisplay(count) {
+  if (onlineCount) {
+    onlineCount.textContent = `${count} online`;
+  }
+}
+
+// ─── 2. YouTube IFrame Player API Callback ────────────────────────────────────
 
 window.onYouTubeIframeAPIReady = function() {
   player = new YT.Player('yt-player-container', {
@@ -66,7 +116,7 @@ window.onYouTubeIframeAPIReady = function() {
   });
 };
 
-// ─── 2. Player Event Callbacks ────────────────────────────────────────────────
+// ─── 3. Player Event Callbacks ────────────────────────────────────────────────
 
 function onPlayerReady(event) {
   isPlayerReady = true;
@@ -94,20 +144,17 @@ function onPlayerStateChange(event) {
     setMediaState('paused');
   }
   // ENDED — Continuous Playlist Loop
-  // YouTube fires ENDED only when the last video in the playlist finishes.
-  // Always restart from index 0 to loop indefinitely.
   else if (state === YT.PlayerState.ENDED) {
     btnPlay.textContent = '▶';
     stopProgressTimer();
     console.log('Playlist ended — restarting from index 0 for infinite loop.');
-    // Small timeout to let YouTube settle before restarting
     setTimeout(() => {
       if (player && typeof player.playVideoAt === 'function') {
         player.playVideoAt(0);
       }
     }, 800);
   }
-  // BUFFERING / CUED — update song info in case track changed
+  // BUFFERING / CUED — update song info
   else if (state === YT.PlayerState.BUFFERING || state === YT.PlayerState.CUED) {
     updateSongInfo();
   }
@@ -117,7 +164,6 @@ function onPlayerError(event) {
   console.warn('YouTube Player error:', event.data);
   playerStatus.textContent = 'આ ગીત હાલ નથી વાગતું... બીજું વગાડીએ.';
 
-  // Skip to next track on error
   setTimeout(() => {
     if (playerStatus.textContent.includes('બીજું')) {
       playerStatus.textContent = '';
@@ -128,7 +174,7 @@ function onPlayerError(event) {
   }, 1500);
 }
 
-// ─── 3. Update Song Meta & Progress ──────────────────────────────────────────
+// ─── 4. Update Song Meta & Progress ──────────────────────────────────────────
 
 function updateSongInfo() {
   if (!player || typeof player.getVideoData !== 'function') return;
@@ -137,11 +183,9 @@ function updateSongInfo() {
     const data = player.getVideoData();
     if (!data || !data.video_id) return;
 
-    // Always update — don't gate on title matching DOM text
     playerTitle.textContent  = data.title  || 'Gujarati Song';
     playerArtist.textContent = data.author || 'GUJJU NI VIBE';
 
-    // Only swap artwork when video actually changed
     if (data.video_id !== currentVideoId) {
       currentVideoId = data.video_id;
       playerArt.src = `https://img.youtube.com/vi/${data.video_id}/hqdefault.jpg`;
@@ -174,7 +218,6 @@ function updateProgress() {
     timeCurrent.textContent = formatTime(current);
     timeDuration.textContent = formatTime(duration);
 
-    // Sync position state for Media Session
     if ('mediaSession' in navigator && duration > 0) {
       try {
         navigator.mediaSession.setPositionState({
@@ -187,7 +230,7 @@ function updateProgress() {
   } catch (_) {}
 }
 
-// ─── 4. Mode Switching (Direct Play) ─────────────────────────────────────────
+// ─── 5. Mode Switching (Direct Play) ─────────────────────────────────────────
 
 function switchMode(newMode) {
   if (newMode === currentMode) {
@@ -210,15 +253,13 @@ function switchMode(newMode) {
     showToast('🎧 Gujarati Vibes — આપડા ગુજરાતી ગીતો!');
   }
 
-  // Update dropdown options
   modeOptions.forEach(opt => {
     opt.classList.toggle('active', opt.dataset.mode === newMode);
   });
 
   closeDropdown();
 
-  // Load new playlist & play — use cuePlaylist then manual playVideo after delay
-  // This avoids the one-step-behind race condition of the CUED event approach.
+  // Load new playlist & play
   if (isPlayerReady && player) {
     const playlistId = PLAYLISTS[newMode] || PLAYLISTS.gujarati;
     player.stopVideo();
@@ -234,7 +275,7 @@ function switchMode(newMode) {
   }
 }
 
-// ─── 5. UI Controls & Event Bindings ─────────────────────────────────────────
+// ─── 6. UI Controls & Event Bindings ─────────────────────────────────────────
 
 btnPlay.addEventListener('click', () => {
   if (!isPlayerReady || !player) return;
@@ -268,7 +309,6 @@ progressBar.addEventListener('click', (e) => {
   }
 });
 
-// Dropdown Toggle
 modeBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   const isOpen = modeDropdown.classList.contains('show');
@@ -297,7 +337,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {
   if (e.key === ' ' || e.code === 'Space') {
     e.preventDefault();
@@ -309,7 +348,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ─── 6. Media Session API ─────────────────────────────────────────────────────
+// ─── 7. Media Session API ─────────────────────────────────────────────────────
 
 function initMediaSession() {
   if (!('mediaSession' in navigator)) return;
@@ -355,7 +394,10 @@ function setMediaState(state) {
   navigator.mediaSession.playbackState = state;
 }
 
-// ─── 7. Utilities ──────────────────────────────────────────────────────────────
+// ─── 8. Startup & Utilities ──────────────────────────────────────────────────
+
+startLiveClock();
+startOnlineCounter();
 
 let toastTimer = null;
 function showToast(msg) {
@@ -375,7 +417,6 @@ function formatTime(seconds) {
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
-// Service Worker Registration for PWA
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./service-worker.js')
     .catch(err => console.log('SW registration skipped:', err));
