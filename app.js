@@ -8,8 +8,8 @@
 
 // ─── Playlists Configuration ──────────────────────────────────────────────────
 const PLAYLISTS = {
-  gujarati: "PLxDvyCZDEb1OZEchuNWH9Q4odT6ld2XzK",
-  garba: "PLV_5eq7MC2L5ek8gO5ayVFRyISluvXZzy" // Garba Night playlist
+  gujarati: "PLV_5eq7MC2L5ek8gO5ayVFRyISluvXZzy",    // 🎧 Gujarati Vibes
+  garba:    "PLxDvyCZDEb1OZEchuNWH9Q4odT6ld2XzK"    // 🪘 Garba Night
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
