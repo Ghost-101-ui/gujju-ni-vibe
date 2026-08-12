@@ -26,11 +26,12 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true   # auto-enables GitHub Pages if not already on
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repo root (index.html, style.css, app.js, assets/)
           path: '.'
 
       - name: Deploy to GitHub Pages
