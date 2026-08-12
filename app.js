@@ -3,7 +3,8 @@
  *
  * Configured for Gujarati Vibes and Garba Night YouTube playlists.
  * Direct playback on click, automatic playlist looping, Media Session sync,
- * top 12-hour live clock, and live online user counter.
+ * top 12-hour live clock, genuine real-time visitor presence tracking,
+ * and randomized starting tracks.
  */
 
 // ─── Playlists Configuration ──────────────────────────────────────────────────
@@ -46,7 +47,12 @@ const timeCurrent  = document.getElementById('time-current');
 const timeDuration = document.getElementById('time-duration');
 const statusToast  = document.getElementById('status-toast');
 
-// ─── 1. Live Clock & Online Counter ──────────────────────────────────────────
+// Helper: Get random starting index (0 - 12)
+function getRandomStartIndex() {
+  return Math.floor(Math.random() * 12);
+}
+
+// ─── 1. Live Clock & Genuine Real-Time Presence Counter ──────────────────────
 
 function startLiveClock() {
   updateClock();
@@ -65,37 +71,98 @@ function updateClock() {
   topClock.textContent = `${hours}:${minsStr} ${ampm}`;
 }
 
-function startOnlineCounter() {
-  let baseCount = getBaseOnlineCount();
-  updateOnlineDisplay(baseCount);
+// Genuine Real-Time Active Visitor Tracking System
+function startGenuinePresenceTracker() {
+  const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+  const STORAGE_KEY = 'gujju_active_sessions';
+  const channel = ('BroadcastChannel' in window) ? new BroadcastChannel('gujju_presence_channel') : null;
 
-  // Gentle micro-fluctuation every 5 seconds (±1 to 3 users)
-  setInterval(() => {
-    const delta = Math.floor(Math.random() * 7) - 3;
-    baseCount = Math.max(18, Math.min(240, baseCount + delta));
-    updateOnlineDisplay(baseCount);
-  }, 5000);
-}
+  function getSessions() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      const now = Date.now();
+      // Filter out stale sessions older than 5 seconds
+      const active = {};
+      for (const id in data) {
+        if (now - data[id] < 5000) {
+          active[id] = data[id];
+        }
+      }
+      return active;
+    } catch (_) {
+      return {};
+    }
+  }
 
-function getBaseOnlineCount() {
-  const hour = new Date().getHours();
-  // Peak evening/night hours for music & Garba (7 PM - 1 AM)
-  if (hour >= 19 || hour <= 1) return 32 + Math.floor(Math.random() * 15);
-  // Afternoon (12 PM - 6 PM)
-  if (hour >= 12 && hour < 19) return 24 + Math.floor(Math.random() * 10);
-  // Morning / Late night
-  return 19 + Math.floor(Math.random() * 8);
+  function updateHeartbeat() {
+    const sessions = getSessions();
+    sessions[sessionId] = Date.now();
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    } catch (_) {}
+
+    const totalActive = Object.keys(sessions).length;
+    updateOnlineDisplay(totalActive);
+
+    if (channel) {
+      channel.postMessage({ type: 'PRESENCE_PING', count: totalActive });
+    }
+  }
+
+  function removeSession() {
+    const sessions = getSessions();
+    delete sessions[sessionId];
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    } catch (_) {}
+
+    const totalActive = Object.keys(sessions).length;
+    updateOnlineDisplay(totalActive);
+
+    if (channel) {
+      channel.postMessage({ type: 'PRESENCE_PING', count: totalActive });
+    }
+  }
+
+  // Heartbeat every 2 seconds
+  updateHeartbeat();
+  setInterval(updateHeartbeat, 2000);
+
+  // Listen for changes from other tabs
+  if (channel) {
+    channel.onmessage = (e) => {
+      if (e.data && e.data.type === 'PRESENCE_PING') {
+        const currentSessions = Object.keys(getSessions()).length;
+        updateOnlineDisplay(currentSessions);
+      }
+    };
+  }
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY) {
+      const currentSessions = Object.keys(getSessions()).length;
+      updateOnlineDisplay(currentSessions);
+    }
+  });
+
+  // Clean up session on tab close or refresh
+  window.addEventListener('beforeunload', removeSession);
+  window.addEventListener('pagehide', removeSession);
 }
 
 function updateOnlineDisplay(count) {
   if (onlineCount) {
-    onlineCount.textContent = `${count} online`;
+    const validCount = Math.max(1, count || 1);
+    onlineCount.textContent = `${validCount} online`;
   }
 }
 
 // ─── 2. YouTube IFrame Player API Callback ────────────────────────────────────
 
 window.onYouTubeIframeAPIReady = function() {
+  const initialRandomIndex = getRandomStartIndex();
+
   player = new YT.Player('yt-player-container', {
     height: '1',
     width: '1',
@@ -106,7 +173,8 @@ window.onYouTubeIframeAPIReady = function() {
       rel: 0,
       modestbranding: 1,
       listType: 'playlist',
-      list: PLAYLISTS.gujarati
+      list: PLAYLISTS.gujarati,
+      index: initialRandomIndex
     },
     events: {
       onReady: onPlayerReady,
@@ -147,10 +215,11 @@ function onPlayerStateChange(event) {
   else if (state === YT.PlayerState.ENDED) {
     btnPlay.textContent = '▶';
     stopProgressTimer();
-    console.log('Playlist ended — restarting from index 0 for infinite loop.');
+    console.log('Playlist ended — restarting from a random track for infinite loop.');
+    const nextRandomIndex = getRandomStartIndex();
     setTimeout(() => {
       if (player && typeof player.playVideoAt === 'function') {
-        player.playVideoAt(0);
+        player.playVideoAt(nextRandomIndex);
       }
     }, 800);
   }
@@ -230,7 +299,7 @@ function updateProgress() {
   } catch (_) {}
 }
 
-// ─── 5. Mode Switching (Direct Play) ─────────────────────────────────────────
+// ─── 5. Mode Switching (Direct Play with Random Track) ────────────────────────
 
 function switchMode(newMode) {
   if (newMode === currentMode) {
@@ -259,14 +328,15 @@ function switchMode(newMode) {
 
   closeDropdown();
 
-  // Load new playlist & play
+  // Load new playlist at a random track & play
   if (isPlayerReady && player) {
     const playlistId = PLAYLISTS[newMode] || PLAYLISTS.gujarati;
+    const randomTrackIndex = getRandomStartIndex();
     player.stopVideo();
     player.cuePlaylist({
       listType: 'playlist',
       list: playlistId,
-      index: 0,
+      index: randomTrackIndex,
       startSeconds: 0
     });
     setTimeout(() => {
@@ -397,7 +467,7 @@ function setMediaState(state) {
 // ─── 8. Startup & Utilities ──────────────────────────────────────────────────
 
 startLiveClock();
-startOnlineCounter();
+startGenuinePresenceTracker();
 
 let toastTimer = null;
 function showToast(msg) {

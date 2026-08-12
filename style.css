@@ -256,10 +256,7 @@ button {
   color: #ffffff;
   letter-spacing: 0.02em;
   line-height: 1.1;
-  text-shadow:
-    0 4px 30px rgba(0, 0, 0, 0.95),
-    0 2px 10px rgba(0, 0, 0, 0.8),
-    0 0 50px rgba(181, 69, 27, 0.4);
+  text-shadow: none;
   margin-bottom: 8px;
 }
 
