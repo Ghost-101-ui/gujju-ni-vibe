@@ -1,0 +1,468 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   style.css — GUJJU NI VIBE Minimalist Visual Poster Style
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700&family=Tiro+Gujarati&display=swap');
+
+:root {
+  --c-sand:       #f5e0a8;
+  --c-gold:       #e0a82e;
+  --c-terracotta: #b5451b;
+  --c-cream:      #fff8eb;
+  --font-main:    'Mukta', system-ui, sans-serif;
+  --font-guj:     'Tiro Gujarati', serif;
+}
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-main);
+  background-color: #0d0803;
+  color: var(--c-cream);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+/* ─── Full-Screen Background Layers (Visual Artwork Hero) ───────────────── */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+  will-change: opacity;
+}
+
+#bg-gujarati {
+  background-image: url('assets/images/gujarati-bg.jpg');
+}
+
+#bg-garba {
+  background-image: url('assets/images/garba-bg.jpg');
+}
+
+.bg-layer.active {
+  opacity: 1;
+}
+
+/* ─── App Overlay Shell ─────────────────────────────────────────────────── */
+#app {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 32px 32px;
+}
+
+/* ─── Top Header Bar ────────────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Top-Left Branding */
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--c-sand);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85), 0 0 20px rgba(0, 0, 0, 0.6);
+  line-height: 1.1;
+}
+
+.brand-subtitle {
+  font-family: var(--font-guj);
+  font-size: 0.85rem;
+  color: var(--c-cream);
+  opacity: 0.9;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+}
+
+/* Top-Right Floating Mode Switch Pill */
+.mode-switch-wrapper {
+  position: relative;
+}
+
+.mode-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(18, 10, 4, 0.72);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(245, 224, 168, 0.25);
+  color: var(--c-sand);
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+}
+
+.mode-pill:hover {
+  background: rgba(28, 16, 7, 0.85);
+  border-color: rgba(245, 224, 168, 0.45);
+  transform: translateY(-1px);
+}
+
+.pill-arrow {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+}
+
+.mode-pill[aria-expanded="true"] .pill-arrow {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.mode-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background: rgba(18, 10, 4, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(245, 224, 168, 0.2);
+  border-radius: 16px;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 100;
+}
+
+.mode-dropdown.show {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: var(--c-cream);
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.mode-option:hover {
+  background: rgba(255, 248, 235, 0.12);
+}
+
+.mode-option.active {
+  background: rgba(181, 69, 27, 0.4);
+  color: var(--c-sand);
+  font-weight: 600;
+}
+
+.mode-opt-icon {
+  font-size: 1.1rem;
+}
+
+/* ─── Center Stage Atmosphere (Breathing Room for Artwork) ────────────────── */
+.center-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.subtle-prompt {
+  font-family: var(--font-guj);
+  font-size: clamp(1.2rem, 3.5vw, 1.8rem);
+  color: var(--c-cream);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+/* Status toast notice */
+.status-toast {
+  margin-top: 12px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(18, 10, 4, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(245, 224, 168, 0.2);
+  font-size: 0.82rem;
+  color: var(--c-sand);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.status-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Bottom Floating Music Player ───────────────────────────────────────── */
+.player-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.player-card {
+  width: 100%;
+  max-width: 560px;
+  background: rgba(14, 8, 3, 0.82);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid rgba(245, 224, 168, 0.2);
+  border-radius: 24px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 1px rgba(255, 255, 255, 0.1);
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.player-card:hover {
+  border-color: rgba(245, 224, 168, 0.35);
+}
+
+/* Album Art */
+.player-art {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1a0a00;
+}
+
+/* Player Body */
+.player-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.song-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.song-title {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--c-cream);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-artist {
+  font-size: 0.78rem;
+  color: var(--c-sand);
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.player-status {
+  font-size: 0.72rem;
+  color: #e74c3c;
+  white-space: nowrap;
+}
+
+/* Progress Bar & Time Row */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-label {
+  font-size: 0.72rem;
+  color: var(--c-cream);
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar:hover {
+  height: 7px;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--c-terracotta), var(--c-gold));
+  border-radius: 999px;
+  transition: width 0.25s linear;
+}
+
+/* Playback Controls (Prev, Play, Next) */
+.player-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: var(--c-cream);
+  opacity: 0.85;
+  transition: all 0.2s ease;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.ctrl-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.btn-play {
+  width: 40px;
+  height: 40px;
+  background: var(--c-terracotta);
+  color: #fff;
+  opacity: 1;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 14px rgba(181, 69, 27, 0.5);
+}
+
+.btn-play:hover {
+  background: #c84e1f;
+  transform: scale(1.08);
+}
+
+/* ─── Invisible YouTube Host ────────────────────────────────────────────── */
+#yt-player-host {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0.001;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+/* ─── Responsive Adjustments ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  #app {
+    padding: 16px 16px 20px;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+  }
+
+  .brand-subtitle {
+    font-size: 0.76rem;
+  }
+
+  .mode-pill {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+  }
+
+  .player-card {
+    padding: 12px 14px;
+    gap: 12px;
+    border-radius: 20px;
+    width: calc(100% - 8px);
+  }
+
+  .player-art {
+    width: 48px;
+    height: 48px;
+  }
+
+  .song-title {
+    font-size: 0.88rem;
+  }
+
+  .song-artist {
+    font-size: 0.72rem;
+  }
+
+  .ctrl-btn {
+    font-size: 0.95rem;
+    width: 30px;
+    height: 30px;
+  }
+
+  .btn-play {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+}

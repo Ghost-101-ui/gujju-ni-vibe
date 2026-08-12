@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#b5451b">
+  <meta name="description" content="GUJJU NI VIBE — ગીત ગુજરાતી, vibe ગુજરાતી. Gujarati YouTube Music Player.">
+  
+  <title>GUJJU NI VIBE | ગીત ગુજરાતી, vibe ગુજરાતી.</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/jpg" href="assets/images/gujarati-bg.jpg">
+</head>
+<body>
+
+  <!-- Full-Screen Illustrated Backgrounds -->
+  <div id="bg-gujarati" class="bg-layer active"></div>
+  <div id="bg-garba" class="bg-layer"></div>
+
+  <!-- App Shell -->
+  <div id="app">
+
+    <!-- Header / Branding & Mode Pill -->
+    <header class="app-header">
+      <div class="brand">
+        <h1 class="brand-title">GUJJU NI VIBE</h1>
+        <p class="brand-subtitle">“ગીત ગુજરાતી, vibe ગુજરાતી.”</p>
+      </div>
+
+      <div class="mode-switch-wrapper">
+        <button id="mode-btn" class="mode-pill" aria-expanded="false" aria-haspopup="true">
+          <span id="mode-pill-text">🎧 Gujarati Vibes</span>
+          <span class="pill-arrow">▾</span>
+        </button>
+
+        <div id="mode-dropdown" class="mode-dropdown">
+          <button class="mode-option active" data-mode="gujarati">
+            <span class="mode-opt-icon">🎧</span> Gujarati Vibes
+          </button>
+          <button class="mode-option" data-mode="garba">
+            <span class="mode-opt-icon">🪘</span> Garba Night
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Center breathing room for full artwork -->
+    <main class="center-stage">
+      <p id="subtle-prompt" class="subtle-prompt">આજે શું સાંભળવું છે?</p>
+      <div id="status-toast" class="status-toast"></div>
+    </main>
+
+    <!-- Bottom Floating Music Player Card -->
+    <footer class="player-container">
+      <div class="player-card">
+        <img id="player-art" src="assets/images/gujarati-bg.jpg" alt="Cover Art" class="player-art">
+
+        <div class="player-body">
+          <div class="player-header">
+            <div class="song-meta">
+              <span id="player-title" class="song-title">સંગીત લોડ થઈ રહ્યું છે...</span>
+              <span id="player-artist" class="song-artist">GUJJU NI VIBE</span>
+            </div>
+            <span id="player-status" class="player-status"></span>
+          </div>
+
+          <div class="progress-row">
+            <span id="time-current" class="time-label">0:00</span>
+            <div id="progress-bar" class="progress-bar">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <span id="time-duration" class="time-label">0:00</span>
+          </div>
+
+          <div class="player-controls">
+            <button id="btn-prev" class="ctrl-btn" aria-label="Previous Track" title="Previous">⏮</button>
+            <button id="btn-play" class="ctrl-btn btn-play" aria-label="Play or Pause" title="Play/Pause">▶</button>
+            <button id="btn-next" class="ctrl-btn" aria-label="Next Track" title="Next">⏭</button>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+  </div><!-- /#app -->
+
+  <!-- Invisible YouTube IFrame Player -->
+  <div id="yt-player-host">
+    <div id="yt-player-container"></div>
+  </div>
+
+  <!-- Main App Controller (must load BEFORE YouTube API so callback is defined) -->
+  <script src="app.js"></script>
+  <!-- Official YouTube IFrame Player API (loads async, calls onYouTubeIframeAPIReady when ready) -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+</body>
+</html>
