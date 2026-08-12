@@ -2,7 +2,7 @@
  * app.js — GUJJU NI VIBE Official YouTube IFrame Player Engine
  *
  * Configured for Gujarati Vibes and Garba Night YouTube playlists.
- * Direct playback on click, automatic playlist looping, Media Session sync,
+ * Multi-device independent playback, automatic playlist looping, Media Session sync,
  * top 12-hour live clock, genuine real-time visitor presence tracking,
  * and randomized starting tracks.
  */
@@ -47,9 +47,9 @@ const timeCurrent  = document.getElementById('time-current');
 const timeDuration = document.getElementById('time-duration');
 const statusToast  = document.getElementById('status-toast');
 
-// Helper: Get random starting index (0 - 12)
+// Helper: Get random starting track index (expanded range 0 - 24)
 function getRandomStartIndex() {
-  return Math.floor(Math.random() * 12);
+  return Math.floor(Math.random() * 25);
 }
 
 // ─── 1. Live Clock & Genuine Real-Time Presence Counter ──────────────────────
@@ -82,7 +82,6 @@ function startGenuinePresenceTracker() {
       const raw = localStorage.getItem(STORAGE_KEY);
       const data = raw ? JSON.parse(raw) : {};
       const now = Date.now();
-      // Filter out stale sessions older than 5 seconds
       const active = {};
       for (const id in data) {
         if (now - data[id] < 5000) {
@@ -125,11 +124,9 @@ function startGenuinePresenceTracker() {
     }
   }
 
-  // Heartbeat every 2 seconds
   updateHeartbeat();
   setInterval(updateHeartbeat, 2000);
 
-  // Listen for changes from other tabs
   if (channel) {
     channel.onmessage = (e) => {
       if (e.data && e.data.type === 'PRESENCE_PING') {
@@ -146,7 +143,6 @@ function startGenuinePresenceTracker() {
     }
   });
 
-  // Clean up session on tab close or refresh
   window.addEventListener('beforeunload', removeSession);
   window.addEventListener('pagehide', removeSession);
 }
@@ -189,7 +185,10 @@ window.onYouTubeIframeAPIReady = function() {
 function onPlayerReady(event) {
   isPlayerReady = true;
   initMediaSession();
-  updateSongInfo();
+  btnPlay.textContent = '▶';
+  
+  // Instant metadata extraction on ready so UI never gets stuck on "Loading..."
+  setTimeout(updateSongInfo, 300);
 }
 
 function onPlayerStateChange(event) {
@@ -223,8 +222,13 @@ function onPlayerStateChange(event) {
       }
     }, 800);
   }
-  // BUFFERING / CUED — update song info
-  else if (state === YT.PlayerState.BUFFERING || state === YT.PlayerState.CUED) {
+  // BUFFERING / CUED / UNSTARTED — Instant metadata extraction
+  else if (
+    state === YT.PlayerState.BUFFERING ||
+    state === YT.PlayerState.CUED ||
+    state === YT.PlayerState.UNSTARTED
+  ) {
+    btnPlay.textContent = '▶';
     updateSongInfo();
   }
 }
@@ -250,15 +254,21 @@ function updateSongInfo() {
 
   try {
     const data = player.getVideoData();
-    if (!data || !data.video_id) return;
+    if (data && data.title) {
+      playerTitle.textContent  = data.title;
+      playerArtist.textContent = data.author || 'GUJJU NI VIBE';
 
-    playerTitle.textContent  = data.title  || 'Gujarati Song';
-    playerArtist.textContent = data.author || 'GUJJU NI VIBE';
-
-    if (data.video_id !== currentVideoId) {
-      currentVideoId = data.video_id;
-      playerArt.src = `https://img.youtube.com/vi/${data.video_id}/hqdefault.jpg`;
-      updateMediaSession(data);
+      if (data.video_id && data.video_id !== currentVideoId) {
+        currentVideoId = data.video_id;
+        playerArt.src = `https://img.youtube.com/vi/${data.video_id}/hqdefault.jpg`;
+        updateMediaSession(data);
+      }
+    } else {
+      // Friendly ready state fallback if metadata is still cueing
+      if (playerTitle.textContent === 'સંગીત લોડ થઈ રહ્યું છે...') {
+        playerTitle.textContent = currentMode === 'garba' ? 'Garba Night Playlist' : 'Gujarati Vibes Playlist';
+        playerArtist.textContent = 'GUJJU NI VIBE';
+      }
     }
   } catch (_) {}
 }
@@ -340,7 +350,10 @@ function switchMode(newMode) {
       startSeconds: 0
     });
     setTimeout(() => {
-      if (player) player.playVideo();
+      if (player) {
+        updateSongInfo();
+        player.playVideo();
+      }
     }, 600);
   }
 }
