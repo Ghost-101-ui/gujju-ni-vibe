@@ -18,7 +18,6 @@ let isPlayerReady = false;
 let currentMode = 'gujarati';
 let progressTimer = null;
 let currentVideoId = '';
-let pendingPlay = false; // true when we need to play as soon as CUED fires
 
 // DOM Elements
 const bgGujarati   = document.getElementById('bg-gujarati');
@@ -108,13 +107,9 @@ function onPlayerStateChange(event) {
       }
     }, 800);
   }
-  // BUFFERING / CUED — update song info; also auto-play if mode was just switched
+  // BUFFERING / CUED — update song info in case track changed
   else if (state === YT.PlayerState.BUFFERING || state === YT.PlayerState.CUED) {
     updateSongInfo();
-    if (pendingPlay && state === YT.PlayerState.CUED) {
-      pendingPlay = false;
-      player.playVideo();
-    }
   }
 }
 
@@ -222,22 +217,20 @@ function switchMode(newMode) {
 
   closeDropdown();
 
-  // Load Playlist & Start Playback Immediately
-  if (isPlayerReady && player && typeof player.loadPlaylist === 'function') {
+  // Load new playlist & play — use cuePlaylist then manual playVideo after delay
+  // This avoids the one-step-behind race condition of the CUED event approach.
+  if (isPlayerReady && player) {
     const playlistId = PLAYLISTS[newMode] || PLAYLISTS.gujarati;
-    pendingPlay = true; // will be consumed by CUED state handler
-    player.loadPlaylist({
+    player.stopVideo();
+    player.cuePlaylist({
       listType: 'playlist',
       list: playlistId,
-      index: 0
+      index: 0,
+      startSeconds: 0
     });
-    // Fallback: if CUED fires before our listener catches it, play after 1.5s
     setTimeout(() => {
-      if (pendingPlay) {
-        pendingPlay = false;
-        player.playVideo();
-      }
-    }, 1500);
+      if (player) player.playVideo();
+    }, 600);
   }
 }
 
