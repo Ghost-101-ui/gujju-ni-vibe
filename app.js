@@ -3,7 +3,7 @@
  *
  * Configured for Gujarati Vibes and Garba Night YouTube playlists.
  * Multi-device independent playback, automatic playlist looping, Media Session sync,
- * top 12-hour live clock, genuine real-time visitor presence tracking,
+ * top 12-hour live clock, genuine active music listeners counter,
  * and randomized starting tracks.
  */
 
@@ -19,6 +19,7 @@ let isPlayerReady = false;
 let currentMode = 'gujarati';
 let progressTimer = null;
 let currentVideoId = '';
+let isAudioPlaying = false; // Local playback state
 
 // DOM Elements
 const bgGujarati   = document.getElementById('bg-gujarati');
@@ -47,12 +48,12 @@ const timeCurrent  = document.getElementById('time-current');
 const timeDuration = document.getElementById('time-duration');
 const statusToast  = document.getElementById('status-toast');
 
-// Helper: Get random starting track index (expanded range 0 - 24)
+// Helper: Get random starting track index (0 - 24)
 function getRandomStartIndex() {
   return Math.floor(Math.random() * 25);
 }
 
-// ─── 1. Live Clock & Genuine Real-Time Presence Counter ──────────────────────
+// ─── 1. Live Clock & Genuine Active Listeners Counter ───────────────────────
 
 function startLiveClock() {
   updateClock();
@@ -71,11 +72,13 @@ function updateClock() {
   topClock.textContent = `${hours}:${minsStr} ${ampm}`;
 }
 
-// Genuine Real-Time Active Visitor Tracking System
+// Global presence heartbeat handle
+let updatePresenceHeartbeat = function() {};
+
 function startGenuinePresenceTracker() {
   const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
-  const STORAGE_KEY = 'gujju_active_sessions';
-  const channel = ('BroadcastChannel' in window) ? new BroadcastChannel('gujju_presence_channel') : null;
+  const STORAGE_KEY = 'gujju_active_sessions_v2';
+  const channel = ('BroadcastChannel' in window) ? new BroadcastChannel('gujju_presence_channel_v2') : null;
 
   function getSessions() {
     try {
@@ -84,8 +87,10 @@ function startGenuinePresenceTracker() {
       const now = Date.now();
       const active = {};
       for (const id in data) {
-        if (now - data[id] < 5000) {
-          active[id] = data[id];
+        if (data[id] && typeof data[id] === 'object') {
+          if (now - data[id].lastSeen < 5000) {
+            active[id] = data[id];
+          }
         }
       }
       return active;
@@ -94,18 +99,35 @@ function startGenuinePresenceTracker() {
     }
   }
 
-  function updateHeartbeat() {
+  updatePresenceHeartbeat = function(overrideIsPlaying) {
+    const playing = (typeof overrideIsPlaying === 'boolean') ? overrideIsPlaying : isAudioPlaying;
     const sessions = getSessions();
-    sessions[sessionId] = Date.now();
+    sessions[sessionId] = {
+      lastSeen: Date.now(),
+      isPlaying: playing
+    };
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
     } catch (_) {}
 
-    const totalActive = Object.keys(sessions).length;
-    updateOnlineDisplay(totalActive);
+    notifyPresenceChange(sessions);
+  };
+
+  function notifyPresenceChange(sessions) {
+    const all = sessions || getSessions();
+    const sessionList = Object.values(all);
+    const totalOnline = sessionList.length;
+    const activeListening = sessionList.filter(s => s.isPlaying).length;
+
+    updateOnlineDisplay(activeListening, totalOnline);
 
     if (channel) {
-      channel.postMessage({ type: 'PRESENCE_PING', count: totalActive });
+      channel.postMessage({
+        type: 'PRESENCE_PING',
+        totalOnline,
+        activeListening
+      });
     }
   }
 
@@ -116,30 +138,29 @@ function startGenuinePresenceTracker() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
     } catch (_) {}
 
-    const totalActive = Object.keys(sessions).length;
-    updateOnlineDisplay(totalActive);
-
-    if (channel) {
-      channel.postMessage({ type: 'PRESENCE_PING', count: totalActive });
-    }
+    notifyPresenceChange(sessions);
   }
 
-  updateHeartbeat();
-  setInterval(updateHeartbeat, 2000);
+  updatePresenceHeartbeat();
+  setInterval(() => updatePresenceHeartbeat(), 2000);
 
   if (channel) {
     channel.onmessage = (e) => {
       if (e.data && e.data.type === 'PRESENCE_PING') {
-        const currentSessions = Object.keys(getSessions()).length;
-        updateOnlineDisplay(currentSessions);
+        const sessions = getSessions();
+        const totalOnline = Object.keys(sessions).length;
+        const activeListening = Object.values(sessions).filter(s => s.isPlaying).length;
+        updateOnlineDisplay(activeListening, totalOnline);
       }
     };
   }
 
   window.addEventListener('storage', (e) => {
     if (e.key === STORAGE_KEY) {
-      const currentSessions = Object.keys(getSessions()).length;
-      updateOnlineDisplay(currentSessions);
+      const sessions = getSessions();
+      const totalOnline = Object.keys(sessions).length;
+      const activeListening = Object.values(sessions).filter(s => s.isPlaying).length;
+      updateOnlineDisplay(activeListening, totalOnline);
     }
   });
 
@@ -147,10 +168,14 @@ function startGenuinePresenceTracker() {
   window.addEventListener('pagehide', removeSession);
 }
 
-function updateOnlineDisplay(count) {
-  if (onlineCount) {
-    const validCount = Math.max(1, count || 1);
-    onlineCount.textContent = `${validCount} online`;
+function updateOnlineDisplay(activeListening, totalOnline) {
+  if (!onlineCount) return;
+  
+  if (activeListening > 0) {
+    onlineCount.textContent = `${activeListening} listening`;
+  } else {
+    const fallbackCount = Math.max(1, totalOnline || 1);
+    onlineCount.textContent = `${fallbackCount} online`;
   }
 }
 
@@ -186,8 +211,6 @@ function onPlayerReady(event) {
   isPlayerReady = true;
   initMediaSession();
   btnPlay.textContent = '▶';
-  
-  // Instant metadata extraction on ready so UI never gets stuck on "Loading..."
   setTimeout(updateSongInfo, 300);
 }
 
@@ -198,22 +221,28 @@ function onPlayerStateChange(event) {
 
   // PLAYING
   if (state === YT.PlayerState.PLAYING) {
+    isAudioPlaying = true;
     btnPlay.textContent = '⏸';
     playerStatus.textContent = '';
     startProgressTimer();
     updateSongInfo();
     setMediaState('playing');
+    updatePresenceHeartbeat(true);
   }
   // PAUSED
   else if (state === YT.PlayerState.PAUSED) {
+    isAudioPlaying = false;
     btnPlay.textContent = '▶';
     stopProgressTimer();
     setMediaState('paused');
+    updatePresenceHeartbeat(false);
   }
   // ENDED — Continuous Playlist Loop
   else if (state === YT.PlayerState.ENDED) {
+    isAudioPlaying = false;
     btnPlay.textContent = '▶';
     stopProgressTimer();
+    updatePresenceHeartbeat(false);
     console.log('Playlist ended — restarting from a random track for infinite loop.');
     const nextRandomIndex = getRandomStartIndex();
     setTimeout(() => {
@@ -222,7 +251,7 @@ function onPlayerStateChange(event) {
       }
     }, 800);
   }
-  // BUFFERING / CUED / UNSTARTED — Instant metadata extraction
+  // BUFFERING / CUED / UNSTARTED
   else if (
     state === YT.PlayerState.BUFFERING ||
     state === YT.PlayerState.CUED ||
@@ -234,6 +263,8 @@ function onPlayerStateChange(event) {
 }
 
 function onPlayerError(event) {
+  isAudioPlaying = false;
+  updatePresenceHeartbeat(false);
   console.warn('YouTube Player error:', event.data);
   playerStatus.textContent = 'આ ગીત હાલ નથી વાગતું... બીજું વગાડીએ.';
 
@@ -264,7 +295,6 @@ function updateSongInfo() {
         updateMediaSession(data);
       }
     } else {
-      // Friendly ready state fallback if metadata is still cueing
       if (playerTitle.textContent === 'સંગીત લોડ થઈ રહ્યું છે...') {
         playerTitle.textContent = currentMode === 'garba' ? 'Garba Night Playlist' : 'Gujarati Vibes Playlist';
         playerArtist.textContent = 'GUJJU NI VIBE';
@@ -338,7 +368,6 @@ function switchMode(newMode) {
 
   closeDropdown();
 
-  // Load new playlist at a random track & play
   if (isPlayerReady && player) {
     const playlistId = PLAYLISTS[newMode] || PLAYLISTS.gujarati;
     const randomTrackIndex = getRandomStartIndex();
